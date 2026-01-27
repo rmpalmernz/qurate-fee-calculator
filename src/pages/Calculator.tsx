@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, forwardRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { validateToken } from '@/lib/tokenUtils';
 import { calculateFees, formatCurrency, parseCurrencyInput } from '@/lib/feeCalculations';
@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import QurateLogo from '@/components/QurateLogo';
 import AccessDenied from './AccessDenied';
-export default function Calculator() {
+
+const Calculator = forwardRef<HTMLDivElement>((_, ref) => {
   const [searchParams] = useSearchParams();
   const [isValidating, setIsValidating] = useState(true);
   const [tokenError, setTokenError] = useState<string | null>(null);
@@ -57,14 +58,18 @@ export default function Calculator() {
     }
   };
   if (isValidating) {
-    return <div className="min-h-screen bg-qurate-slate flex items-center justify-center">
+    return (
+      <div ref={ref} className="min-h-screen bg-qurate-slate flex items-center justify-center">
         <div className="text-qurate-light animate-pulse">Validating access...</div>
-      </div>;
+      </div>
+    );
   }
   if (tokenError) {
-    return <AccessDenied error={tokenError} />;
+    return <div ref={ref}><AccessDenied error={tokenError} /></div>;
   }
-  return <div className="min-h-screen bg-qurate-slate">
+
+  return (
+    <div ref={ref} className="min-h-screen bg-qurate-slate">
       {/* Header */}
       <header className="border-b border-qurate-slate-light/20">
         <div className="container mx-auto px-4 py-5 flex items-center justify-between">
@@ -255,5 +260,10 @@ export default function Calculator() {
           </a>
         </p>
       </footer>
-    </div>;
-}
+    </div>
+  );
+});
+
+Calculator.displayName = 'Calculator';
+
+export default Calculator;
