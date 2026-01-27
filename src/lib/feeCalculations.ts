@@ -5,17 +5,51 @@
 interface FeeBand {
   minEV: number;
   maxEV: number;
-  termsAgreed: number;      // Fixed fee when terms agreed
-  completionFee: number;    // Fixed completion fee
-  slidingScaleRate: number; // Flat percentage applied to (EV - $2M)
+  termsAgreed: number; // Fixed fee when terms agreed
+  completionFee: number; // Fixed completion fee
+  slidingScaleRate: number; // % rate
+  slidingScaleBase: number; // baseline to subtract (matches Excel formulas)
 }
 
-// Fee bands - sliding scale uses FLAT rate based on highest tier reached
+// Fee bands
+// IMPORTANT: Sliding Scale baseline is per your Excel formulas:
+//  - Up to $5M: (EV - 2,000,000) * 3.50%
+//  - $5M-$10M: (EV - 5,000,000) * 2.50%
+//  - $10M-$20M: (EV - 10,000,000) * 2.50%
+//  - $20M-$50M: (EV - 2,000,000) * 1.50%
 const FEE_BANDS: FeeBand[] = [
-  { minEV: 2_000_000, maxEV: 5_000_000, termsAgreed: 20_000, completionFee: 125_000, slidingScaleRate: 0.035 },
-  { minEV: 5_000_000, maxEV: 10_000_000, termsAgreed: 30_000, completionFee: 270_000, slidingScaleRate: 0.025 },
-  { minEV: 10_000_000, maxEV: 20_000_000, termsAgreed: 35_000, completionFee: 400_000, slidingScaleRate: 0.025 },
-  { minEV: 20_000_000, maxEV: 50_000_000, termsAgreed: 50_000, completionFee: 600_000, slidingScaleRate: 0.015 },
+  {
+    minEV: 2_000_000,
+    maxEV: 5_000_000,
+    termsAgreed: 20_000,
+    completionFee: 125_000,
+    slidingScaleRate: 0.035,
+    slidingScaleBase: 2_000_000,
+  },
+  {
+    minEV: 5_000_000,
+    maxEV: 10_000_000,
+    termsAgreed: 30_000,
+    completionFee: 270_000,
+    slidingScaleRate: 0.025,
+    slidingScaleBase: 5_000_000,
+  },
+  {
+    minEV: 10_000_000,
+    maxEV: 20_000_000,
+    termsAgreed: 35_000,
+    completionFee: 400_000,
+    slidingScaleRate: 0.025,
+    slidingScaleBase: 10_000_000,
+  },
+  {
+    minEV: 20_000_000,
+    maxEV: 50_000_000,
+    termsAgreed: 50_000,
+    completionFee: 600_000,
+    slidingScaleRate: 0.015,
+    slidingScaleBase: 2_000_000,
+  },
 ];
 
 const MINIMUM_EV = 2_000_000;
@@ -50,8 +84,8 @@ export function calculateFees(enterpriseValue: number): FeeResult | null {
   const termsAgreedFee = applicableBand.termsAgreed;
   const completionFee = applicableBand.completionFee;
 
-  // Sliding scale: (EV - $2M) × rate of highest tier
-  const taxableAmount = cappedEV - MINIMUM_EV;
+  // Sliding scale: (EV - baseline) × rate (baseline varies by tier, per Excel)
+  const taxableAmount = Math.max(0, cappedEV - applicableBand.slidingScaleBase);
   const slidingScaleFee = taxableAmount * applicableBand.slidingScaleRate;
 
   const totalSuccessFee = termsAgreedFee + completionFee + slidingScaleFee;
