@@ -81,19 +81,30 @@ export default function Calculator() {
       <header className="border-b border-qurate-slate-light/20">
         <div className="container mx-auto px-4 py-5 flex items-center justify-between">
           <QurateLogo />
-          <span className="text-qurate-muted text-sm">Fee Calculator</span>
         </div>
       </header>
 
+      {/* Hero Section with Strapline */}
+      <section className="container mx-auto px-4 py-12 max-w-4xl">
+        <h1 className="text-white text-4xl md:text-5xl lg:text-6xl font-serif italic leading-tight mb-6">
+          Business advice you<br />
+          can count on.<br />
+          People you can trust.
+        </h1>
+        <p className="text-qurate-muted text-lg md:text-xl max-w-2xl">
+          Your experienced corporate finance and strategic business transaction advisory team.
+        </p>
+      </section>
+
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 pb-8 max-w-4xl">
         {/* Calculator Card */}
         <Card className="bg-qurate-slate-light border-qurate-slate-light/30 shadow-xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-qurate-light text-xl">
-              Calculate Your Advisory Fees
+            <CardTitle className="text-white text-2xl md:text-3xl font-semibold">
+              Fee Calculator
             </CardTitle>
-            <CardDescription className="text-qurate-muted">
+            <CardDescription className="text-qurate-muted text-base">
               Enter your Enterprise Value to see the fee breakdown
             </CardDescription>
           </CardHeader>
@@ -181,7 +192,7 @@ export default function Calculator() {
                     </div>
                   </div>
 
-                  {enterpriseValue > 50_000_000 && (
+            {enterpriseValue > 50_000_000 && (
                     <p className="text-sm text-qurate-muted italic">
                       * Fees are capped at the $50M rate for Enterprise Values above $50,000,000
                     </p>
@@ -191,8 +202,10 @@ export default function Calculator() {
             )}
           </CardContent>
         </Card>
+      </main>
 
-        {/* Reference Table */}
+      {/* Reference Table Section */}
+      <section className="container mx-auto px-4 pb-8 max-w-4xl">
         <Card className="mt-8 bg-qurate-slate-light border-qurate-slate-light/30">
           <CardHeader className="pb-4">
             <CardTitle className="text-qurate-light text-lg">
@@ -242,31 +255,31 @@ export default function Calculator() {
             </div>
           </CardContent>
         </Card>
+      </section>
 
-        {/* Footer */}
-        <footer className="mt-8 text-center text-qurate-muted text-sm space-y-2">
-          <p>This is an estimate only. Final fees may vary based on engagement terms.</p>
-          <p>
-            Contact us at{' '}
-            <a 
-              href="mailto:info@qurate.com.au" 
-              className="text-qurate-gold hover:underline"
-            >
-              info@qurate.com.au
-            </a>
-          </p>
-          <p className="pt-4">
-            <a 
-              href="https://www.qurate.com.au" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-qurate-gold hover:underline"
-            >
-              www.qurate.com.au
-            </a>
-          </p>
-        </footer>
-      </main>
+      {/* Footer */}
+      <footer className="container mx-auto px-4 pb-8 max-w-4xl text-center text-qurate-muted text-sm space-y-2">
+        <p>This is an estimate only. Final fees may vary based on engagement terms.</p>
+        <p>
+          Contact us at{' '}
+          <a 
+            href="mailto:info@qurate.com.au" 
+            className="text-qurate-gold hover:underline"
+          >
+            info@qurate.com.au
+          </a>
+        </p>
+        <p className="pt-4">
+          <a 
+            href="https://www.qurate.com.au" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-qurate-gold hover:underline"
+          >
+            www.qurate.com.au
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
