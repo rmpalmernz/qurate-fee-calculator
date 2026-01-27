@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import QurateLogo from '@/components/QurateLogo';
 import AccessDenied from './AccessDenied';
-
 export default function Calculator() {
   const [searchParams] = useSearchParams();
   const [isValidating, setIsValidating] = useState(true);
@@ -21,15 +20,13 @@ export default function Calculator() {
   useEffect(() => {
     const token = searchParams.get('token');
     const devMode = searchParams.get('dev') === 'true';
-    
+
     // Allow access in dev mode without token
     if (devMode) {
       setIsValidating(false);
       return;
     }
-    
     const result = validateToken(token);
-    
     if (!result.valid) {
       setTokenError(result.error || 'Invalid access');
     }
@@ -46,37 +43,28 @@ export default function Calculator() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     setInputValue(rawValue);
-    
     const numericValue = parseCurrencyInput(rawValue);
     setEnterpriseValue(numericValue);
   };
-
   const handleInputBlur = () => {
     if (enterpriseValue > 0) {
       setInputValue(formatCurrency(enterpriseValue).replace('A$', ''));
     }
   };
-
   const handleInputFocus = () => {
     if (enterpriseValue > 0) {
       setInputValue(enterpriseValue.toString());
     }
   };
-
   if (isValidating) {
-    return (
-      <div className="min-h-screen bg-qurate-slate flex items-center justify-center">
+    return <div className="min-h-screen bg-qurate-slate flex items-center justify-center">
         <div className="text-qurate-light animate-pulse">Validating access...</div>
-      </div>
-    );
+      </div>;
   }
-
   if (tokenError) {
     return <AccessDenied error={tokenError} />;
   }
-
-  return (
-    <div className="min-h-screen bg-qurate-slate">
+  return <div className="min-h-screen bg-qurate-slate">
       {/* Header */}
       <header className="border-b border-qurate-slate-light/20">
         <div className="container mx-auto px-4 py-5 flex items-center justify-between">
@@ -91,7 +79,7 @@ export default function Calculator() {
           can count on.<br />
           People you can trust.
         </h1>
-        <p className="text-qurate-muted text-base sm:text-lg md:text-xl font-light">
+        <p className="text-qurate-muted text-lg md:text-xl font-light whitespace-nowrap">
           Your experienced corporate finance and strategic business transaction advisory team.
         </p>
       </section>
@@ -119,28 +107,15 @@ export default function Calculator() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-qurate-muted">
                   $
                 </span>
-                <Input
-                  id="ev-input"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="e.g. 15,000,000"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  onFocus={handleInputFocus}
-                  className="pl-8 bg-qurate-slate border-qurate-slate-light/50 text-qurate-light placeholder:text-qurate-muted/50 focus:border-qurate-gold focus:ring-qurate-gold text-lg h-12"
-                />
+                <Input id="ev-input" type="text" inputMode="numeric" placeholder="e.g. 15,000,000" value={inputValue} onChange={handleInputChange} onBlur={handleInputBlur} onFocus={handleInputFocus} className="pl-8 bg-qurate-slate border-qurate-slate-light/50 text-qurate-light placeholder:text-qurate-muted/50 focus:border-qurate-gold focus:ring-qurate-gold text-lg h-12" />
               </div>
-              {enterpriseValue > 0 && enterpriseValue < 2_000_000 && (
-                <p className="text-sm text-amber-400">
+              {enterpriseValue > 0 && enterpriseValue < 2_000_000 && <p className="text-sm text-amber-400">
                   Minimum Enterprise Value is $2,000,000
-                </p>
-              )}
+                </p>}
             </div>
 
             {/* Results Section */}
-            {feeResult && (
-              <>
+            {feeResult && <>
                 <Separator className="bg-qurate-slate-light/30" />
                 
                 <div className="space-y-4">
@@ -162,7 +137,7 @@ export default function Calculator() {
                     {/* Completion Fee */}
                     <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
                       <p className="text-qurate-muted text-sm uppercase tracking-wide">
-                        Completion Fee
+                        Completion Fee - Fixed   
                       </p>
                       <p className="text-qurate-gold text-2xl font-bold mt-1">
                         {formatCurrency(feeResult.completionFee)}
@@ -202,14 +177,11 @@ export default function Calculator() {
                     </div>
                   </div>
 
-                  {enterpriseValue > 50_000_000 && (
-                    <p className="text-sm text-qurate-muted italic">
+                  {enterpriseValue > 50_000_000 && <p className="text-sm text-qurate-muted italic">
                       * Fees are capped at the $50M rate for Enterprise Values above $50,000,000
-                    </p>
-                  )}
+                    </p>}
                 </div>
-              </>
-            )}
+              </>}
           </CardContent>
         </Card>
       </main>
@@ -273,24 +245,15 @@ export default function Calculator() {
         <p>This is an estimate only. Final fees may vary based on engagement terms.</p>
         <p>
           Contact us at{' '}
-          <a 
-            href="mailto:info@qurate.com.au" 
-            className="text-qurate-gold hover:underline"
-          >
+          <a href="mailto:info@qurate.com.au" className="text-qurate-gold hover:underline">
             info@qurate.com.au
           </a>
         </p>
         <p className="pt-4">
-          <a 
-            href="https://www.qurate.com.au" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-qurate-gold hover:underline"
-          >
+          <a href="https://www.qurate.com.au" target="_blank" rel="noopener noreferrer" className="text-qurate-gold hover:underline">
             www.qurate.com.au
           </a>
         </p>
       </footer>
-    </div>
-  );
+    </div>;
 }
