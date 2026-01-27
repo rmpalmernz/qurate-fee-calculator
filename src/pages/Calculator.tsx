@@ -147,7 +147,7 @@ export default function Calculator() {
                     {/* Sliding Scale */}
                     <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
                       <p className="text-qurate-muted text-sm uppercase tracking-wide">
-                        Sliding Scale
+                        Completion Fee - Sliding 
                       </p>
                       <p className="text-qurate-gold text-2xl font-bold mt-1">
                         {formatCurrency(feeResult.slidingScaleFee)}
