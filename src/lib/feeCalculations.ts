@@ -116,10 +116,3 @@ export function parseCurrencyInput(value: string): number {
   return parseFloat(cleaned) || 0;
 }
 
-// Reference table for display showing max fees at each tier
-export const FEE_REFERENCE_TABLE = [
-  { ev: 5_000_000, termsAgreed: 20_000, completionFee: 125_000, rate: '3.50%' },
-  { ev: 10_000_000, termsAgreed: 30_000, completionFee: 270_000, rate: '2.50%' },
-  { ev: 20_000_000, termsAgreed: 35_000, completionFee: 400_000, rate: '2.50%' },
-  { ev: 50_000_000, termsAgreed: 50_000, completionFee: 600_000, rate: '1.50%' },
-];
