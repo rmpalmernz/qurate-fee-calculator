@@ -1,4 +1,4 @@
-import qurateLogo from '@/assets/qurate-logo.svg';
+import qurateLogo from '@/assets/qurate-logo-gold.png';
 
 interface QurateLogoProps {
   className?: string;
@@ -9,7 +9,7 @@ export default function QurateLogo({ className = "" }: QurateLogoProps) {
     <img 
       src={qurateLogo} 
       alt="Qurate Advisory" 
-      className={`h-10 w-auto ${className}`}
+      className={`h-12 w-auto ${className}`}
     />
   );
 }
