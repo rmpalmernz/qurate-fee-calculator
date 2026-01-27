@@ -1,22 +1,24 @@
 // Fee calculation logic based on Qurate's tiered fee structure
-// Total Fee = Retainer + Success Fee
 // Success Fee = Terms Agreed + Completion Fee + Sliding Scale
+// Sliding Scale = (EV - $2M) × rate of highest tier reached
 
 interface FeeBand {
   minEV: number;
   maxEV: number;
   termsAgreed: number;      // Fixed fee when terms agreed
   completionFee: number;    // Fixed completion fee
-  slidingScaleRate: number; // Percentage for sliding scale (cumulative)
+  slidingScaleRate: number; // Flat percentage applied to (EV - $2M)
 }
 
-// Fee bands with cumulative sliding scale
+// Fee bands - sliding scale uses FLAT rate based on highest tier reached
 const FEE_BANDS: FeeBand[] = [
   { minEV: 2_000_000, maxEV: 5_000_000, termsAgreed: 20_000, completionFee: 125_000, slidingScaleRate: 0.035 },
   { minEV: 5_000_000, maxEV: 10_000_000, termsAgreed: 30_000, completionFee: 270_000, slidingScaleRate: 0.025 },
   { minEV: 10_000_000, maxEV: 20_000_000, termsAgreed: 35_000, completionFee: 400_000, slidingScaleRate: 0.025 },
   { minEV: 20_000_000, maxEV: 50_000_000, termsAgreed: 50_000, completionFee: 600_000, slidingScaleRate: 0.015 },
 ];
+
+const MINIMUM_EV = 2_000_000;
 
 export interface FeeResult {
   enterpriseValue: number;
@@ -25,83 +27,43 @@ export interface FeeResult {
   slidingScaleFee: number;
   totalSuccessFee: number;
   percentageOfEV: number;
-  breakdown: BandBreakdown[];
-}
-
-export interface BandBreakdown {
-  band: string;
-  evInBand: number;
-  termsAgreed: number;
-  completionFee: number;
-  slidingScale: number;
 }
 
 export function calculateFees(enterpriseValue: number): FeeResult | null {
   // Minimum EV is $2M
-  if (enterpriseValue < 2_000_000) {
+  if (enterpriseValue < MINIMUM_EV) {
     return null;
   }
 
-  // Cap at $50M
+  // Cap at $50M for fee calculation
   const cappedEV = Math.min(enterpriseValue, 50_000_000);
 
-  let totalTermsAgreed = 0;
-  let totalCompletionFee = 0;
-  let totalSlidingScale = 0;
-  const breakdown: BandBreakdown[] = [];
-
+  // Find the highest tier the EV reaches
+  let applicableBand = FEE_BANDS[0];
   for (const band of FEE_BANDS) {
-    // Check if EV reaches this band
-    if (cappedEV <= band.minEV) {
-      break;
+    if (cappedEV > band.minEV) {
+      applicableBand = band;
     }
-
-    // Calculate how much EV falls within this band
-    const evInBand = Math.min(cappedEV, band.maxEV) - band.minEV;
-    
-    if (evInBand <= 0) continue;
-
-    // Calculate sliding scale for this band
-    const slidingScale = evInBand * band.slidingScaleRate;
-
-    // Determine if this is the highest band reached
-    const isHighestBand = cappedEV <= band.maxEV;
-
-    // Add fixed fees (only for the highest band reached, or accumulate - let me check)
-    // Based on the table, fees seem to be for the band you're IN
-    // For $25M, only the $20-50M band shows the fixed fees
-    
-    // Actually, looking at the table for $25M EV, only $20-50M row shows $25M
-    // This suggests only the current band's fixed fees apply
-    
-    // Let me implement as: fixed fees apply only for the highest band
-    const termsAgreed = isHighestBand ? band.termsAgreed : 0;
-    const completionFee = isHighestBand ? band.completionFee : 0;
-
-    totalTermsAgreed += termsAgreed;
-    totalCompletionFee += completionFee;
-    totalSlidingScale += slidingScale;
-
-    breakdown.push({
-      band: `$${(band.minEV / 1_000_000).toFixed(0)}M to $${(band.maxEV / 1_000_000).toFixed(0)}M`,
-      evInBand,
-      termsAgreed,
-      completionFee,
-      slidingScale: Math.round(slidingScale),
-    });
   }
 
-  const totalSuccessFee = totalTermsAgreed + totalCompletionFee + totalSlidingScale;
+  // Fixed fees from highest tier reached
+  const termsAgreedFee = applicableBand.termsAgreed;
+  const completionFee = applicableBand.completionFee;
+
+  // Sliding scale: (EV - $2M) × rate of highest tier
+  const taxableAmount = cappedEV - MINIMUM_EV;
+  const slidingScaleFee = taxableAmount * applicableBand.slidingScaleRate;
+
+  const totalSuccessFee = termsAgreedFee + completionFee + slidingScaleFee;
   const percentageOfEV = (totalSuccessFee / enterpriseValue) * 100;
 
   return {
     enterpriseValue,
-    termsAgreedFee: Math.round(totalTermsAgreed),
-    completionFee: Math.round(totalCompletionFee),
-    slidingScaleFee: Math.round(totalSlidingScale),
+    termsAgreedFee: Math.round(termsAgreedFee),
+    completionFee: Math.round(completionFee),
+    slidingScaleFee: Math.round(slidingScaleFee),
     totalSuccessFee: Math.round(totalSuccessFee),
     percentageOfEV: Math.round(percentageOfEV * 100) / 100,
-    breakdown,
   };
 }
 
