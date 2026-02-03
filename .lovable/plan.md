@@ -1,94 +1,169 @@
 
-# Admin Link Generator
 
-A simple internal page for generating time-limited calculator access links for clients.
+# Fee Calculator Update + Admin Dashboard
 
-## Overview
+## Summary
 
-This feature adds an admin-only page at `/admin/generate-link` where you can:
-- Select how long the link should be valid (7, 30, or 90 days)
-- Optionally add a client name for reference
-- Generate a secure access link
-- Copy the link to clipboard with one click
+This plan covers two major changes:
+1. **Update fee calculation logic** to match the new engagement letter framework (cumulative percentage tiers)
+2. **Build an Admin Dashboard** to track generated tokens and client links
 
-## User Flow
+---
+
+## Part 1: New Fee Structure
+
+### Current vs New Model
+
+The engagement letter introduces a **cumulative tiered percentage** model where each EV band is taxed at its own rate (like income tax brackets):
 
 ```text
-+----------------------------------+
-|  Admin Link Generator            |
-+----------------------------------+
-|                                  |
-|  Client Name (optional)          |
-|  [________________________]      |
-|                                  |
-|  Link Validity                   |
-|  ( ) 7 days                      |
-|  (•) 30 days                     |
-|  ( ) 90 days                     |
-|                                  |
-|  [  Generate Link  ]             |
-|                                  |
-+----------------------------------+
-|                                  |
-|  Generated Link:                 |
-|  +----------------------------+  |
-|  | https://app.../calculator  |  |
-|  | ?token=eyJleH...           |  |
-|  +----------------------------+  |
-|                                  |
-|  Expires: 28 Feb 2026            |
-|                                  |
-|  [  Copy to Clipboard  ]         |
-|                                  |
-+----------------------------------+
+Example: $12,000,000 Enterprise Value
+
+First $5M      × 5.00% = $250,000
+Next $5M       × 4.00% = $200,000
+Next $2M       × 3.00% = $60,000
+─────────────────────────────────
+Total Success Fee      = $510,000 (4.25% effective rate)
 ```
 
-## What Will Be Built
+### Additional Fee Components
 
-### 1. New Page: `src/pages/AdminGenerateLink.tsx`
-- Form with client name input (optional, for your reference only)
-- Radio button group for validity period (7, 30, 90 days)
-- Generate button that creates a token using existing `generateToken()` function
-- Display area showing the full URL with token
-- Copy-to-clipboard button with success feedback via toast
-- Shows expiry date for the generated link
+| Component | Amount | When Payable |
+|-----------|--------|--------------|
+| Monthly Retainer | $15,000/month | Monthly in advance (max 5 months) |
+| Retainer Rebate | 50% of retainers paid | Credited against Success Fee at completion |
+| Transaction Structuring Fee | $35,000 | On term sheet execution |
 
-### 2. Route Addition
-- Add `/admin/generate-link` route in `App.tsx`
-- No authentication required (internal tool only)
+### Calculator Updates
 
-### 3. UI Styling
-- Uses existing `PageShell` layout for consistency
-- Uses existing `Card`, `Input`, `RadioGroup`, and `Button` primitives
-- Follows Qurate brand tokens (slate background, gold accents)
+- Replace the current three-fee model (Terms Agreed + Completion + Sliding) with cumulative tiers
+- Add optional inputs for retainer months paid (to calculate rebate)
+- Show breakdown by tier
+- Display effective percentage rate
+
+---
+
+## Part 2: Admin Dashboard
+
+### Features
+
+A new admin page at `/admin` with:
+
+1. **Token Management Table**
+   - Client name
+   - Generated date
+   - Expiry date
+   - Status (Active / Expired)
+   - Quick copy button
+
+2. **Generate New Link** (moved into dashboard)
+   - Client name input
+   - Validity period selector
+   - Generate button
+
+3. **Token Storage**
+   - Store generated tokens in browser localStorage
+   - Persists across sessions
+   - Can delete/revoke tokens
+
+### User Flow
+
+```text
++------------------------------------------+
+|  Admin Dashboard                         |
++------------------------------------------+
+|                                          |
+|  [Generate New Link]                     |
+|                                          |
+|  ┌──────────────────────────────────────┐|
+|  │ Client Links                         │|
+|  ├──────────────────────────────────────┤|
+|  │ Client     │ Created │ Expires │     │|
+|  ├──────────────────────────────────────┤|
+|  │ Clipex     │ 3 Feb   │ 5 May   │ [Copy] [Delete] │|
+|  │ Smith Ind  │ 1 Feb   │ 3 Mar   │ [Copy] [Delete] │|
+|  │ ACME Corp  │ 15 Jan  │ 14 Feb  │ Expired         │|
+|  └──────────────────────────────────────┘|
++------------------------------------------+
+```
 
 ---
 
 ## Technical Details
 
 ### Files to Create
+
 | File | Purpose |
 |------|---------|
-| `src/pages/AdminGenerateLink.tsx` | Admin page with link generation form |
+| `src/pages/Admin.tsx` | Main admin dashboard with token table |
+| `src/lib/tokenStorage.ts` | LocalStorage utilities for token management |
 
 ### Files to Modify
+
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Add route for `/admin/generate-link` |
+| `src/lib/feeCalculations.ts` | Replace with cumulative tier logic |
+| `src/pages/Calculator.tsx` | Update UI for new fee breakdown |
+| `src/App.tsx` | Add `/admin` route |
 
-### Key Implementation
-
-The page will import and use the existing `generateToken()` function from `src/lib/tokenUtils.ts`:
+### New Fee Calculation Logic
 
 ```typescript
-import { generateToken } from '@/lib/tokenUtils';
+const FEE_TIERS = [
+  { upTo: 5_000_000, rate: 0.05 },    // First $5M at 5%
+  { upTo: 10_000_000, rate: 0.04 },   // $5M-$10M at 4%
+  { upTo: 15_000_000, rate: 0.03 },   // $10M-$15M at 3%
+  { upTo: 20_000_000, rate: 0.025 },  // $15M-$20M at 2.5%
+  { upTo: Infinity, rate: 0.02 },     // Above $20M at 2%
+];
 
-// When user clicks "Generate Link"
-const token = generateToken(selectedDays); // 7, 30, or 90
-const fullUrl = `${window.location.origin}/calculator?token=${token}`;
+function calculateSuccessFee(ev: number) {
+  let remaining = ev;
+  let total = 0;
+  let prevCap = 0;
+
+  for (const tier of FEE_TIERS) {
+    const taxable = Math.min(remaining, tier.upTo - prevCap);
+    total += taxable * tier.rate;
+    remaining -= taxable;
+    prevCap = tier.upTo;
+    if (remaining <= 0) break;
+  }
+
+  return total;
+}
 ```
 
-### Dependencies
-- No new dependencies required
-- Uses existing UI components: `Card`, `Input`, `Button`, `RadioGroup`, `Label`
-- Uses existing `sonner` toast for copy confirmation
+### Token Storage Schema
+
+```typescript
+interface StoredToken {
+  id: string;
+  clientName: string;
+  token: string;
+  createdAt: string;
+  expiresAt: string;
+  fullUrl: string;
+}
+```
+
+---
+
+## Implementation Order
+
+1. Create `src/lib/tokenStorage.ts` for localStorage management
+2. Update `src/lib/feeCalculations.ts` with new cumulative tier logic
+3. Update `src/pages/Calculator.tsx` to display new fee breakdown
+4. Create `src/pages/Admin.tsx` with token table and generation form
+5. Update `src/App.tsx` with new `/admin` route
+6. Remove or redirect `/admin/generate-link` to `/admin`
+
+---
+
+## Dependencies
+
+No new dependencies required. Uses existing:
+- localStorage API for token persistence
+- shadcn/ui Table component for token list
+- Existing Card, Button, Input primitives
+
