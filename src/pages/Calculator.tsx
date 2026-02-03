@@ -8,7 +8,7 @@ import {
   FEE_TIERS,
   MONTHLY_RETAINER,
   MAX_RETAINER_MONTHS,
-  TRANSACTION_STRUCTURING_FEE,
+  REBATE_EV_THRESHOLD,
 } from '@/lib/feeCalculations';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -210,8 +210,55 @@ export default function Calculator() {
                     </Table>
                   </div>
 
-                  {/* Summary Cards */}
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  {/* Summary Cards - Restructured */}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Transaction Structuring Fee */}
+                    <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
+                      <p className="text-qurate-muted text-sm uppercase tracking-wide">
+                        Transaction Structuring Fee
+                      </p>
+                      <p className="text-qurate-light text-2xl font-bold mt-1">
+                        {formatCurrency(feeResult.transactionStructuringFee)}
+                      </p>
+                      <p className="text-xs text-qurate-muted mt-1">On term sheet execution</p>
+                    </div>
+
+                    {/* Total Retainers Paid */}
+                    <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
+                      <p className="text-qurate-muted text-sm uppercase tracking-wide">
+                        Total Retainers Paid
+                      </p>
+                      <p className="text-qurate-light text-2xl font-bold mt-1">
+                        {formatCurrency(feeResult.retainerPaid)}
+                      </p>
+                      <p className="text-xs text-qurate-muted mt-1">
+                        {retainerMonths} month{retainerMonths !== 1 ? 's' : ''} × {formatCurrency(MONTHLY_RETAINER)}
+                      </p>
+                    </div>
+
+                    {/* Retainer Rebate */}
+                    <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
+                      <p className="text-qurate-muted text-sm uppercase tracking-wide">
+                        Retainer Rebate
+                      </p>
+                      {feeResult.rebateApplies ? (
+                        <>
+                          <p className="text-green-400 text-2xl font-bold mt-1">
+                            -{formatCurrency(feeResult.retainerRebate)}
+                          </p>
+                          <p className="text-xs text-qurate-muted mt-1">50% of retainers credited</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-qurate-muted text-2xl font-bold mt-1">N/A</p>
+                          <p className="text-xs text-qurate-muted mt-1">
+                            Applies when EV ≥ {formatCurrency(REBATE_EV_THRESHOLD)}
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Gross Success Fee */}
                     <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
                       <p className="text-qurate-muted text-sm uppercase tracking-wide">
                         Gross Success Fee
@@ -219,27 +266,6 @@ export default function Calculator() {
                       <p className="text-qurate-light text-2xl font-bold mt-1">
                         {formatCurrency(feeResult.grossSuccessFee)}
                       </p>
-                    </div>
-
-                    {feeResult.retainerRebate > 0 && (
-                      <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
-                        <p className="text-qurate-muted text-sm uppercase tracking-wide">
-                          Retainer Rebate (50%)
-                        </p>
-                        <p className="text-green-400 text-2xl font-bold mt-1">
-                          -{formatCurrency(feeResult.retainerRebate)}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
-                      <p className="text-qurate-muted text-sm uppercase tracking-wide">
-                        Transaction Structuring
-                      </p>
-                      <p className="text-qurate-light text-2xl font-bold mt-1">
-                        {formatCurrency(TRANSACTION_STRUCTURING_FEE)}
-                      </p>
-                      <p className="text-xs text-qurate-muted mt-1">On term sheet execution</p>
                     </div>
                   </div>
 
@@ -306,12 +332,11 @@ export default function Calculator() {
             </div>
             <div className="p-4 border-t border-qurate-slate-light/20">
               <p className="text-sm text-qurate-muted">
-                <strong>Monthly Retainer:</strong> {formatCurrency(MONTHLY_RETAINER)}/month (max{' '}
-                {MAX_RETAINER_MONTHS} months) — 50% credited against Success Fee
+              <strong>Monthly Retainer:</strong> {formatCurrency(MONTHLY_RETAINER)}/month (max{' '}
+                {MAX_RETAINER_MONTHS} months) — 50% credited against Success Fee when EV ≥ {formatCurrency(REBATE_EV_THRESHOLD)}
               </p>
               <p className="text-sm text-qurate-muted mt-1">
-                <strong>Transaction Structuring Fee:</strong>{' '}
-                {formatCurrency(TRANSACTION_STRUCTURING_FEE)} — payable on term sheet execution
+                <strong>Transaction Structuring Fee:</strong> Tiered by EV ($20k–$50k) — payable on term sheet execution
               </p>
             </div>
           </CardContent>
