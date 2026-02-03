@@ -20,7 +20,34 @@ export const FEE_TIERS: FeeTier[] = [
 export const MONTHLY_RETAINER = 15_000;
 export const MAX_RETAINER_MONTHS = 5;
 export const RETAINER_REBATE_RATE = 0.5; // 50% rebate
-export const TRANSACTION_STRUCTURING_FEE = 35_000;
+export const REBATE_EV_THRESHOLD = 10_000_000; // Rebate only applies when EV >= $10M
+
+// Tiered Transaction Structuring Fee based on EV
+export interface TSFTier {
+  upTo: number;
+  fee: number;
+  label: string;
+}
+
+export const TSF_TIERS: TSFTier[] = [
+  { upTo: 5_000_000, fee: 20_000, label: 'Under $5M' },
+  { upTo: 10_000_000, fee: 25_000, label: '$5M - $10M' },
+  { upTo: 15_000_000, fee: 30_000, label: '$10M - $15M' },
+  { upTo: 30_000_000, fee: 35_000, label: '$15M - $30M' },
+  { upTo: Infinity, fee: 50_000, label: 'Above $30M' },
+];
+
+/**
+ * Get Transaction Structuring Fee based on Enterprise Value
+ */
+export function getTransactionStructuringFee(enterpriseValue: number): number {
+  for (const tier of TSF_TIERS) {
+    if (enterpriseValue <= tier.upTo) {
+      return tier.fee;
+    }
+  }
+  return TSF_TIERS[TSF_TIERS.length - 1].fee;
+}
 
 export interface TierBreakdown {
   label: string;
@@ -35,6 +62,7 @@ export interface FeeResult {
   grossSuccessFee: number;
   retainerPaid: number;
   retainerRebate: number;
+  rebateApplies: boolean;
   netSuccessFee: number;
   transactionStructuringFee: number;
   effectiveRate: number;
@@ -73,10 +101,14 @@ export function calculateFees(
     prevCap = tier.upTo;
   }
 
-  // Calculate retainer rebate
+  // Calculate retainer rebate (only applies when EV >= $10M)
   const cappedMonths = Math.min(retainerMonthsPaid, MAX_RETAINER_MONTHS);
   const retainerPaid = cappedMonths * MONTHLY_RETAINER;
-  const retainerRebate = retainerPaid * RETAINER_REBATE_RATE;
+  const rebateApplies = enterpriseValue >= REBATE_EV_THRESHOLD;
+  const retainerRebate = rebateApplies ? retainerPaid * RETAINER_REBATE_RATE : 0;
+
+  // Get tiered Transaction Structuring Fee
+  const transactionStructuringFee = getTransactionStructuringFee(enterpriseValue);
 
   // Net success fee after rebate
   const netSuccessFee = Math.max(0, grossSuccessFee - retainerRebate);
@@ -91,8 +123,9 @@ export function calculateFees(
     grossSuccessFee: Math.round(grossSuccessFee),
     retainerPaid: Math.round(retainerPaid),
     retainerRebate: Math.round(retainerRebate),
+    rebateApplies,
     netSuccessFee: Math.round(netSuccessFee),
-    transactionStructuringFee: TRANSACTION_STRUCTURING_FEE,
+    transactionStructuringFee,
     effectiveRate: Math.round(effectiveRate * 100) / 100,
   };
 }
