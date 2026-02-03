@@ -236,27 +236,18 @@ export default function Calculator() {
                       </p>
                     </div>
 
-                    {/* Retainer Rebate */}
-                    <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
-                      <p className="text-qurate-muted text-sm uppercase tracking-wide">
-                        Retainer Rebate
-                      </p>
-                      {feeResult.rebateApplies ? (
-                        <>
-                          <p className="text-green-400 text-2xl font-bold mt-1">
-                            -{formatCurrency(feeResult.retainerRebate)}
-                          </p>
-                          <p className="text-xs text-qurate-muted mt-1">50% of retainers credited</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-qurate-muted text-2xl font-bold mt-1">N/A</p>
-                          <p className="text-xs text-qurate-muted mt-1">
-                            Applies when EV ≥ {formatCurrency(REBATE_EV_THRESHOLD)}
-                          </p>
-                        </>
-                      )}
-                    </div>
+                    {/* Retainer Rebate - only show if rebate applies and retainer paid */}
+                    {feeResult.rebateApplies && feeResult.retainerRebate > 0 && (
+                      <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
+                        <p className="text-qurate-muted text-sm uppercase tracking-wide">
+                          Retainer Rebate
+                        </p>
+                        <p className="text-green-400 text-2xl font-bold mt-1">
+                          -{formatCurrency(feeResult.retainerRebate)}
+                        </p>
+                        <p className="text-xs text-qurate-muted mt-1">50% of retainers credited</p>
+                      </div>
+                    )}
 
                     {/* Gross Success Fee */}
                     <div className="bg-qurate-slate rounded-lg p-4 border border-qurate-slate-light/20">
