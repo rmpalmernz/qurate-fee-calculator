@@ -110,7 +110,7 @@ export default function Calculator() {
         </p>
         {/* Welcome message if recipient name available */}
         {recipient?.recipientName && (
-          <p className="text-qurate-gold text-sm font-medium mt-4">
+          <p className="text-qurate-gold text-sm mt-4">
             Welcome, {recipient.recipientName}
             {recipient.company?.name && ` • ${recipient.company.name}`}
           </p>
