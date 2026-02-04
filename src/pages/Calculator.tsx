@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { validateToken } from '@/lib/tokenUtils';
 import {
@@ -20,6 +20,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageShell from '@/components/layout/PageShell';
 import AccessDenied from './AccessDenied';
 
+// Pre-computed retainer month options for performance
+const RETAINER_MONTH_OPTIONS = [3, 4, 5, 6] as const;
+
 export default function Calculator() {
   const [searchParams] = useSearchParams();
   const [isValidating, setIsValidating] = useState(true);
@@ -28,11 +31,12 @@ export default function Calculator() {
   const [enterpriseValue, setEnterpriseValue] = useState(0);
   const [retainerMonths, setRetainerMonths] = useState(MIN_RETAINER_MONTHS);
 
+  // Extract params once to avoid re-validation on unrelated param changes
+  const token = searchParams.get('token');
+  const devMode = searchParams.get('dev') === 'true';
+
   // Validate token on mount (bypass in dev mode with ?dev=true)
   useEffect(() => {
-    const token = searchParams.get('token');
-    const devMode = searchParams.get('dev') === 'true';
-
     if (devMode) {
       setIsValidating(false);
       return;
@@ -42,7 +46,7 @@ export default function Calculator() {
       setTokenError(result.error || 'Invalid access');
     }
     setIsValidating(false);
-  }, [searchParams]);
+  }, [token, devMode]);
 
   // Calculate fees when enterprise value changes
   const feeResult = useMemo(() => {
@@ -50,25 +54,44 @@ export default function Calculator() {
     return calculateFees(enterpriseValue, retainerMonths);
   }, [enterpriseValue, retainerMonths]);
 
-  // Handle input formatting
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoize monthly retainer to avoid recalculation in dropdown
+  const monthlyRetainer = useMemo(() => 
+    getMonthlyRetainer(enterpriseValue), 
+    [enterpriseValue]
+  );
+
+  // Memoized dropdown options
+  const retainerOptions = useMemo(() => 
+    RETAINER_MONTH_OPTIONS.map((m) => ({
+      value: m,
+      label: `${m} months (${formatCurrency(m * monthlyRetainer)})`,
+    })),
+    [monthlyRetainer]
+  );
+
+  // Memoized event handlers
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
     setInputValue(rawValue);
     const numericValue = parseCurrencyInput(rawValue);
     setEnterpriseValue(numericValue);
-  };
+  }, []);
 
-  const handleInputBlur = () => {
+  const handleInputBlur = useCallback(() => {
     if (enterpriseValue > 0) {
       setInputValue(formatCurrency(enterpriseValue).replace('A$', ''));
     }
-  };
+  }, [enterpriseValue]);
 
-  const handleInputFocus = () => {
+  const handleInputFocus = useCallback(() => {
     if (enterpriseValue > 0) {
       setInputValue(enterpriseValue.toString());
     }
-  };
+  }, [enterpriseValue]);
+
+  const handleRetainerChange = useCallback((val: string) => {
+    setRetainerMonths(parseInt(val, 10));
+  }, []);
 
   if (isValidating) {
     return (
@@ -138,7 +161,7 @@ export default function Calculator() {
                 </Label>
                 <Select
                   value={retainerMonths.toString()}
-                  onValueChange={(val) => setRetainerMonths(parseInt(val, 10))}
+                  onValueChange={handleRetainerChange}
                 >
                   <SelectTrigger
                     id="retainer-months"
@@ -147,18 +170,15 @@ export default function Calculator() {
                     <SelectValue placeholder="Select months" />
                   </SelectTrigger>
                   <SelectContent className="bg-qurate-slate border-qurate-slate-light/50">
-                    {[3, 4, 5, 6].map((m) => {
-                      const monthlyRate = getMonthlyRetainer(enterpriseValue);
-                      return (
-                        <SelectItem
-                          key={m}
-                          value={m.toString()}
-                          className="text-qurate-light focus:bg-qurate-slate-light"
-                        >
-                          {m} months ({formatCurrency(m * monthlyRate)})
-                        </SelectItem>
-                      );
-                    })}
+                    {retainerOptions.map((option) => (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value.toString()}
+                        className="text-qurate-light focus:bg-qurate-slate-light"
+                      >
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-qurate-muted">
@@ -223,7 +243,7 @@ export default function Calculator() {
                         {formatCurrency(feeResult.retainerPaid)}
                       </p>
                       <p className="text-xs text-qurate-muted mt-1">
-                        {retainerMonths} months × {formatCurrency(getMonthlyRetainer(enterpriseValue))}
+                        {retainerMonths} months × {formatCurrency(monthlyRetainer)}
                       </p>
                     </div>
 
